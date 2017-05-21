@@ -1,7 +1,7 @@
 from datetime import datetime
 from reporter import Reporter
-from urlparse import urlparse
-import ConfigParser
+from urllib.parse import urlparse
+import configparser
 import logging
 import requests
 import socket
@@ -45,7 +45,7 @@ class ActiveTest():
     def execute(self, url):
         try:            
             result = self.do_test(url)
-        except Exception, e:
+        except Exception as e:
             tb = traceback.format_exc()
             result = (ActiveTest().result("Error", e, tb), None)
         
@@ -118,7 +118,7 @@ class Scanner():
         if response != None and test.run_passives:
             result['passive'] = {}
             self.reporter.start_passives()
-            for passive_key in self._passive_tests_.keys():
+            for passive_key in list(self._passive_tests_.keys()):
                 passive = self._passive_tests_[passive_key]["test"]                    
                 result["passive"][passive.__class__] = self.do_passive_scan(passive, is_ssl, response)
                 self.reporter.write_passive(passive.__class__, result["passive"][passive.__class__])
@@ -132,7 +132,7 @@ class Scanner():
         is_ssl = url.scheme == "https"
         results = {}
         self.reporter.start_actives()
-        for key in self._active_tests_.keys():
+        for key in list(self._active_tests_.keys()):
             test = self._active_tests_[key]["test"]
             results[test.__class__] = self.do_active_scan(test, is_ssl, target)
         self.reporter.end_actives()
@@ -178,23 +178,23 @@ class Scanner():
         Scanner.logger.error("%s is not a valid target (reason: %s)" % (url, reason))
         
     def configure_check(self, check_name, key, value):
-        if self._active_tests_.has_key(check_name):
+        if check_name in self._active_tests_:
             check = self._active_tests_[check_name]["test"]
-        elif self._passive_tests_.has_key(check_name):
+        elif check_name in self._passive_tests_:
             check = self._passive_tests_[check_name]["test"]
         else:
             raise Exception("The requested check is not available (%s)" % check_name)
         if hasattr(check, "config") == False:
             raise Exception("This check cannot be configured.")
-        if check.config.has_key(key) == False:
+        if (key in check.config) == False:
             raise Exception("%s is not a valid configuration for %s", key, check_name)
         check.config[key] = value
         Scanner.logger.debug("\t%s.%s=%s" % (check_name, key, value))
     
     def disable_check(self, check_name):
-        if self._active_tests_.has_key(check_name):
+        if check_name in self._active_tests_:
             self._active_tests_[check_name]["enabled"] = False
-        elif self._passive_tests_.has_key(check_name):
+        elif check_name in self._passive_tests_:
             self._passive_tests_[check_name]["enabled"] = False
         else:
             raise Exception("The requested check is not available (%s)" % check_name)
@@ -219,7 +219,7 @@ class Scanner():
     
     def save_configuration(self, path):
         # write out a configuration file.
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.add_section("Garmr")
         config.set("Garmr", "force-passives", self.force_passives)
         config.set("Garmr", "module", ", ".join(self.modules))
@@ -233,18 +233,18 @@ class Scanner():
             for target in self._targets_:
                 config.set("Targets", "%s"%i, target)
         
-        for check in self._active_tests_.keys():
+        for check in list(self._active_tests_.keys()):
             config.add_section(check)
             config.set(check, "enabled", self._active_tests_[check]["enabled"])
             if hasattr(self._active_tests_[check]["test"], "config"):
-                for key in self._active_tests_[check]["test"].config.keys():
+                for key in list(self._active_tests_[check]["test"].config.keys()):
                     config.set(check, key, self._active_tests_[check]["test"].config[key])
         
-        for check in self._passive_tests_.keys():
+        for check in list(self._passive_tests_.keys()):
             config.add_section(check)
             config.set(check, "enabled", self._passive_tests_[check]["enabled"])
             if hasattr(self._passive_tests_[check]["test"], "config"):
-                for key in self._passive_tests_[check]["test"].config.keys():
+                for key in list(self._passive_tests_[check]["test"].config.keys()):
                     config.set(check, key, self._passive_tests_[check]["test"].config[key])
 
                     

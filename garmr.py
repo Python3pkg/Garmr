@@ -52,7 +52,7 @@ def main():
                 __import__(module)
                 m = sys.modules[module]
                 m.configure(scanner)
-            except Exception, e:
+            except Exception as e:
                 Scanner.logger.fatal("Unable to load the requested module [%s]: %s", module, e)
                 quit()
                 
@@ -66,7 +66,7 @@ def main():
             Scanner.logger.info("Writing report to [%s] using [%s]" % (args.output, args.report))
         if isinstance(scanner.reporter, Reporter) == False:
             raise Exception("Cannot configure a non-scanner object!")
-    except Exception, e:
+    except Exception as e:
         Scanner.logger.fatal("Unable to use the reporter class [%s]: %s", args.report, e)
         quit()
         
@@ -82,7 +82,7 @@ def main():
                 check = opt.split(":")[0]
                 key, value = opt[len(check)+1:].split("=")
                 scanner.configure_check(check, key, value)
-            except Exception, e:
+            except Exception as e:
                 Scanner.logger.fatal("Invalid check option: %s (%s)", opt, e)
                 
     if args.dump_path != None:
